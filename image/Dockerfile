@@ -1,7 +1,7 @@
 FROM docker.io/netbirdio/netbird
 
 # install needed package
-RUN apk add openssh
+RUN apk add openssh samba
 
 # change init command
 ENTRYPOINT /bin/bash -c "/usr/local/bin/netbird-entrypoint.sh &>/dev/null & /bin/bash"
