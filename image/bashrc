@@ -15,7 +15,7 @@ function __cleanup_prompt__() {
     ###############################################
     \builtin local -r workdir="${green}\w "
     ###############################################
-    \builtin local -r podman="${red}[podman] "
+    \builtin local -r podman="${red}[ podman] "
     ###############################################
     \builtin local status=
     [[ "$retval" -ne 0 ]] && status="${red}❌${retval} "
