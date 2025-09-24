@@ -1,7 +1,7 @@
 FROM docker.io/netbirdio/netbird
 
 # install needed package
-RUN apk add openssh samba
+RUN apk add openssh samba rclone
 
 # put files in place
 COPY ./bashrc /root/.bashrc
