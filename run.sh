@@ -9,7 +9,7 @@ BASHINIT_FILE="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.bash_init"
 bash_init=()
 [[ -f "$BASHINIT_FILE" ]] && bash_init+=(--security-opt label=type:container_runtime_t -v "$BASHINIT_FILE:/root/.bash_init")
 
-podman run -it --rm \
+podman --root "/tmp/script-podman-images-$(id -u)" run -it --rm \
     --cap-add NET_ADMIN \
     --cap-add SYS_ADMIN \
     --cap-add NET_RAW \
