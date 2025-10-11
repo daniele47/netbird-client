@@ -2,7 +2,7 @@ FROM docker.io/netbirdio/netbird
 
 # install needed package
 RUN apk update && apk upgrade && apk fix
-RUN apk add openssh sshpass neovim
+RUN apk add openssh sshpass neovim git
 
 # put files in place
 COPY ./bashrc /root/.bashrc
