@@ -25,6 +25,8 @@ function __cleanup_prompt__() {
     local -r green="\[\e[1;36m\]"
     local -r wipe="\[\e[0m\]"
     ###############################################
+    builtin local -r podman="${red}[󱚿 netbird] "
+    ###############################################
     local -r workdir="${green}\w "
     ###############################################
     local pyvenv=""
@@ -108,7 +110,7 @@ function __cleanup_prompt__() {
     *) symbol="${red}❯ " ;;
     esac
     ###############################################
-    PS1="${wipe}${workdir}${pyvenv}${gitbranch}${gitstate}${gitstatus}${status}${symbol}${wipe}"
+    PS1="${wipe}${podman}${workdir}${pyvenv}${gitbranch}${gitstate}${gitstatus}${status}${symbol}${wipe}"
 
     # exit with correct status code
     return "${retval}"

@@ -6,6 +6,7 @@ RUN apk add openssh sshpass neovim git
 
 # put files in place
 COPY ./bashrc /root/.bashrc
+COPY ./gitconfig /root/.gitconfig
 
 # change init command
 ENTRYPOINT /bin/bash -c "/usr/local/bin/netbird-entrypoint.sh &>/dev/null & /bin/bash"
