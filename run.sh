@@ -1,12 +1,16 @@
 #!/bin/bash
 
-SETUP_KEY_FILE="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.setup_key"
-BASHINIT_FILE="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.bash_init"
-MOUNT_DIR_FILE="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.mount_dir"
+SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+TWEAKS_DIR="$SCRIPT_DIR/.tweaks"
+SETUP_KEY_FILE="$TWEAKS_DIR/setup_key"
+BASHINIT_FILE="$TWEAKS_DIR/bash_init"
+MOUNT_DIR_FILE="$TWEAKS_DIR/mount_dir"
+SSH_CONF_DIR="$TWEAKS_DIR/ssh"
 
-# check for setup key file
-[[ ! -f "$SETUP_KEY_FILE" ]] && echo "File '.setup_key' is missing! create it, and write netbird setup key in it!" && exit 1
-if [[ -f "$MOUNT_DIR_FILE" ]]; then
+# checks files exist
+mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
+touch "$SETUP_KEY_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
+if [[ -s "$MOUNT_DIR_FILE" ]]; then
     MOUNT_DIR="$(realpath "$(cat "$MOUNT_DIR_FILE")")"
     MOUNT_DIR_DIR="$(dirname "$MOUNT_DIR")"
     if [ ! -d "$MOUNT_DIR" ] || [ ! -w "$MOUNT_DIR" ] || [ ! -O "$MOUNT_DIR" ]; then
@@ -21,9 +25,8 @@ if [[ -f "$MOUNT_DIR_FILE" ]]; then
 fi 
 
 # mount bash init if it exists
-volumes=()
+volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 [[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
-[[ -f "$BASHINIT_FILE" ]] && volumes+=( -v "$BASHINIT_FILE:/root/.bash_init" )
 
 podman run --rm -it \
     --cap-add NET_ADMIN \
