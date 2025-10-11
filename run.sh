@@ -8,7 +8,16 @@ MOUNT_DIR_FILE="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.mount_dir"
 [[ ! -f "$SETUP_KEY_FILE" ]] && echo "File '.setup_key' is missing! create it, and write netbird setup key in it!" && exit 1
 if [[ -f "$MOUNT_DIR_FILE" ]]; then
     MOUNT_DIR="$(realpath "$(cat "$MOUNT_DIR_FILE")")"
-    [[ ! -d "$MOUNT_DIR" || ! -w "$MOUNT_DIR" || ! -O "$MOUNT_DIR" ]] && echo "invalid mount dir: $MOUNT_DIR"
+    MOUNT_DIR_DIR="$(dirname "$MOUNT_DIR")"
+    if [ ! -d "$MOUNT_DIR" ] || [ ! -w "$MOUNT_DIR" ] || [ ! -O "$MOUNT_DIR" ]; then
+        echo "invalid mount dir: $MOUNT_DIR"
+        exit 1
+    fi
+    if [ ! -d "$MOUNT_DIR_DIR" ] || [ ! -w "$MOUNT_DIR_DIR" ] || [ ! -O "$MOUNT_DIR_DIR" ]; then
+        echo "invalid mount dir: $MOUNT_DIR"
+        exit 1
+    fi
+    
 fi 
 
 # mount bash init if it exists
