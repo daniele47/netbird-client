@@ -2,18 +2,26 @@
 
 SETUP_KEY_FILE="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.setup_key"
 BASHINIT_FILE="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.bash_init"
+MOUNT_DIR_FILE="$(dirname "$(realpath "${BASH_SOURCE[0]}")")/.mount_dir"
 
+# check for setup key file
 [[ ! -f "$SETUP_KEY_FILE" ]] && echo "File '.setup_key' is missing! create it, and write netbird setup key in it!" && exit 1
+if [[ -f "$MOUNT_DIR_FILE" ]]; then
+    MOUNT_DIR="$(realpath "$(cat "$MOUNT_DIR_FILE")")"
+    [[ ! -d "$MOUNT_DIR" || ! -w "$MOUNT_DIR" || ! -O "$MOUNT_DIR" ]] && echo "invalid mount dir: $MOUNT_DIR"
+fi 
 
 # mount bash init if it exists
-bash_init=()
-[[ -f "$BASHINIT_FILE" ]] && bash_init+=(--security-opt label=type:container_runtime_t -v "$BASHINIT_FILE:/root/.bash_init")
+volumes=()
+[[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" )
+[[ -f "$BASHINIT_FILE" ]] && volumes+=( -v "$BASHINIT_FILE:/root/.bash_init" )
 
-podman run -it --rm \
+podman run --rm -it \
     --cap-add NET_ADMIN \
     --cap-add SYS_ADMIN \
     --cap-add NET_RAW \
     --device /dev/net/tun \
     -e NB_SETUP_KEY="$(cat "$SETUP_KEY_FILE")" \
-    "${bash_init[@]}" \
+    --security-opt label=type:container_runtime_t \
+    "${volumes[@]}" \
     ghcr.io/daniele47/netbird bash
