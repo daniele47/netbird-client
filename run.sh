@@ -22,7 +22,7 @@ fi
 
 # mount bash init if it exists
 volumes=()
-[[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" )
+[[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
 [[ -f "$BASHINIT_FILE" ]] && volumes+=( -v "$BASHINIT_FILE:/root/.bash_init" )
 
 podman run --rm -it \
@@ -32,5 +32,6 @@ podman run --rm -it \
     --device /dev/net/tun \
     -e NB_SETUP_KEY="$(cat "$SETUP_KEY_FILE")" \
     --security-opt label=type:container_runtime_t \
+    -w /root \
     "${volumes[@]}" \
     ghcr.io/daniele47/netbird bash
