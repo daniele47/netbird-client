@@ -13,6 +13,7 @@ touch "$SETUP_KEY_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
 ! [[ -s "$SETUP_KEY_FILE" ]] && echo 'setup_key file is missing' && exit 1
 if [[ -s "$MOUNT_DIR_FILE" ]]; then
     MOUNT_DIR="$(realpath "$(cat "$MOUNT_DIR_FILE")")"
+    MOUNT_DIR="${1:-$MOUNT_DIR}"
     MOUNT_DIR_DIR="$(dirname "$MOUNT_DIR")"
     if [ ! -d "$MOUNT_DIR" ] || [ ! -w "$MOUNT_DIR" ] || [ ! -O "$MOUNT_DIR" ]; then
         echo "invalid mount dir: $MOUNT_DIR"
@@ -22,7 +23,6 @@ if [[ -s "$MOUNT_DIR_FILE" ]]; then
         echo "invalid mount dir: $MOUNT_DIR"
         exit 1
     fi
-    
 fi 
 
 # mount bash init if it exists
