@@ -122,6 +122,6 @@ function __cleanup_prompt__() {
 
 PROMPT_COMMAND="__cleanup_prompt__;"${PROMPT_COMMAND}
 
-[[ -f /root/.bash_init ]] && source /root/.bash_init
+[[ -f "$HOME/.bash_init" ]] && source "$HOME/.bash_init"
 true
 
