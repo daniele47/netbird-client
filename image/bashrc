@@ -5,6 +5,10 @@ alias la='ls -A'
 alias ll='ls -l'
 alias lla='ls -lA'
 
+# env vars
+export HISTCONTROL=ignoredups
+export EDITOR="nvim"
+
 # prompt
 function __cleanup_prompt__() {
     local -r retval="$?"
