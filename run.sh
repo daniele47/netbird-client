@@ -8,6 +8,7 @@ MOUNT_DIR_FILE="$TWEAKS_DIR/mount_dir"
 SSH_CONF_DIR="$TWEAKS_DIR/ssh"
 
 # checks files exist
+[[ "$#" -gt 1 ]] && echo 'too many parameters passed' && exit 1
 mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
 touch "$SETUP_KEY_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
 ! [[ -s "$SETUP_KEY_FILE" ]] && echo 'setup_key file is missing' && exit 1
