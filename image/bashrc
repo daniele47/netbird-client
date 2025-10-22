@@ -4,6 +4,31 @@
 alias la='ls -A'
 alias ll='ls -l'
 alias lla='ls -lA'
+alias cat='bat'
+alias ls='lsd --group-dirs first'
+function tree() {
+    if command -v /usr/bin/tree &>/dev/null; then
+        timeout 0.2 lsd --group-dirs first --tree "$@" &>/dev/null
+        if [[ $? -ne "124" ]]; then
+            lsd --group-dirs first --tree "$@"
+        else
+            /usr/bin/tree "$@"
+        fi 2>/dev/null
+    else
+        lsd --group-dirs first --tree "$@" &>/dev/null
+    fi
+}
+eval "$(zoxide init bash)"
+function zz() {
+    if (cd "$@" &>/dev/null); then 
+        cd "$@" &>/dev/null
+    else
+        case "$(zoxide query -l "$@" | wc -l)" in
+            0|1) __zoxide_z "$@" &>/dev/null || return 1 ;;
+            *) __zoxide_zi "$@" &>/dev/null || return 1 ;;
+        esac
+    fi
+}
 
 # env vars
 export HISTCONTROL=ignoredups
