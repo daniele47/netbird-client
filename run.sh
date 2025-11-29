@@ -30,7 +30,7 @@ fi
 volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 [[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
 
-podman run --root "/tmp/podman-scripted-$(id -u)" --rm -it \
+podman run --rm -it \
     --cap-add NET_ADMIN \
     --cap-add SYS_ADMIN \
     --cap-add NET_RAW \
