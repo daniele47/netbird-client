@@ -39,4 +39,4 @@ podman run --rm -it \
     --security-opt label=type:container_runtime_t \
     -w /root \
     "${volumes[@]}" \
-    ghcr.io/daniele47/netbird bash
+    ghcr.io/daniele47/netbird-client bash

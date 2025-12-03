@@ -30,6 +30,6 @@ jobs:
           context: ./image
           push: true
           tags: |
-            ghcr.io/${{ github.repository_owner }}/netbird:latest
+            ghcr.io/${{ github.repository_owner }}/netbird-client:latest
           labels: |
             org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
