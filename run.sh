@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# script to spun up a netbird container
+# script to spun up a single netbird container, which is then shared
 #
 # configurable files:
 #   .tweaks/
@@ -54,21 +54,9 @@ fi
 volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 [[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
 
-# daemonize container and assert there is a single serving container
-ITER=(-it)
-CMD=(bash)
-if [[ -v SERVE ]]; then
-    serving_count=$(podman ps -q --filter "ancestor=$IMAGE_URL" --filter "command=sleep" --format "{{.ID}}" | wc -l)
-    if [[ "$serving_count" -ge 1 ]]; then
-        echo -e "\e[1;31mError: Already have $serving_count serving containers running\e[m" >&2
-        exit 1
-    fi
-    ITER=(-d)
-    CMD=(sleep infinity)
-fi
-
-# launch container
-podman run --rm "${ITER[@]}" \
+# make sure a container is running as a daemon, and if needed launch an interactive terminal
+if [[ "$(podman ps -q --filter "ancestor=$IMAGE_URL" --format "{{.ID}}" | wc -l)" -eq 0 ]]; then
+    podman run --rm -d -q \
     --cap-add NET_ADMIN \
     --cap-add SYS_ADMIN \
     --cap-add NET_RAW \
@@ -79,4 +67,6 @@ podman run --rm "${ITER[@]}" \
     --security-opt label=type:container_runtime_t \
     -w /root \
     "${volumes[@]}" \
-    "$IMAGE_URL" "${CMD[@]}"
+    "$IMAGE_URL" tini sleep infinity
+fi
+[[ -v SERVE ]] && podman exec -it "$(podman ps -q --filter "ancestor=$IMAGE_URL" --format "{{.ID}}" | head -1)" bash

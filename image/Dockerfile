@@ -2,7 +2,7 @@ FROM docker.io/netbirdio/netbird
 
 # install needed package
 RUN apk update && apk upgrade && apk fix
-RUN apk add --no-cache openssh neovim git bash-completion lsd zoxide bat
+RUN apk add --no-cache openssh neovim git bash-completion lsd zoxide bat tini
 RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config && \
     echo 'PasswordAuthentication no' >> /etc/ssh/sshd_config && \
     echo 'PubkeyAuthentication yes' >> /etc/ssh/sshd_config && \
