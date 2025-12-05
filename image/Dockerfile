@@ -15,4 +15,5 @@ COPY ./gitconfig /root/.gitconfig
 COPY ./nvim /root/.config/nvim
 
 # change init command
-ENTRYPOINT /bin/bash -c "/usr/sbin/sshd; /usr/local/bin/netbird-entrypoint.sh &>/dev/null & /bin/bash"
+ENTRYPOINT /bin/bash -c "/usr/sbin/sshd; /usr/local/bin/netbird-entrypoint.sh &>/dev/null & /bin/bash -c -- "
+CMD /bin/bash

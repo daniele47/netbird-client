@@ -9,6 +9,12 @@
 #   ├── hostname    ---> specifies container hostname to netbird
 #   ├── mount_dir   ---> allows mounting a single user directory into the container
 #   └── setup_key   ---> specified setup key to access netbird vpn network
+#
+# environment variables:
+#   SERVE           ---> if present run the container non interactively in the background
+#
+# parameters:
+#   $1              ---> specify mount directory (overrides the one specified in the mount_dir file)
 
 # variables
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
@@ -47,8 +53,13 @@ fi
 volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 [[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
 
+# daemonize container
+ITER=(-it)
+CMD=(bash)
+[[ -v SERVE ]] && ITER=(-d) && CMD=(tail -f /dev/null)
+
 # launch container
-podman run --rm -it \
+podman run --rm "${ITER[@]}" \
     --cap-add NET_ADMIN \
     --cap-add SYS_ADMIN \
     --cap-add NET_RAW \
@@ -58,4 +69,4 @@ podman run --rm -it \
     --security-opt label=type:container_runtime_t \
     -w /root \
     "${volumes[@]}" \
-    ghcr.io/daniele47/netbird-client bash
+    ghcr.io/daniele47/netbird-client "${CMD[@]}"
