@@ -66,6 +66,7 @@ podman run --rm "${ITER[@]}" \
     --device /dev/net/tun \
     -e NB_SETUP_KEY="$(cat "$SETUP_KEY_FILE")" \
     -e NB_HOSTNAME="$(cat "$HOSTNAME_FILE")" \
+    --hostname "$(cat "$HOSTNAME_FILE")" \
     --security-opt label=type:container_runtime_t \
     -w /root \
     "${volumes[@]}" \
