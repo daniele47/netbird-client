@@ -1,5 +1,16 @@
 #!/bin/bash
 
+# script to spun up a netbird container
+#
+# configurable files:
+#   .tweaks/
+#   ├── ssh/        ---> mounted to /root/.ssh
+#   ├── bash_init   ---> mounted to /root/.bash_init and called from .bashrc
+#   ├── hostname    ---> specifies container hostname to netbird
+#   ├── mount_dir   ---> allows mounting a single user directory into the container
+#   └── setup_key   ---> specified setup key to access netbird vpn network
+
+# variables
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 TWEAKS_DIR="$SCRIPT_DIR/.tweaks"
 SETUP_KEY_FILE="$TWEAKS_DIR/setup_key"
