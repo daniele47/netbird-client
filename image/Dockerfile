@@ -13,7 +13,9 @@ RUN echo 'PermitRootLogin yes' >> /etc/ssh/sshd_config && \
 COPY ./bashrc /root/.bashrc
 COPY ./gitconfig /root/.gitconfig
 COPY ./nvim /root/.config/nvim
+COPY ./entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # change init command
-ENTRYPOINT /bin/bash -c "/usr/sbin/sshd; /usr/local/bin/netbird-entrypoint.sh &>/dev/null & /bin/bash -c -- "
-CMD /bin/bash
+ENTRYPOINT ["/entrypoint.sh"]
+CMD ["bash"]

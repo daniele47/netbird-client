@@ -56,7 +56,7 @@ volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 # daemonize container
 ITER=(-it)
 CMD=(bash)
-[[ -v SERVE ]] && ITER=(-d) && CMD=(tail -f /dev/null)
+[[ -v SERVE ]] && ITER=(-d) && CMD=(sleep infinity)
 
 # launch container
 podman run --rm "${ITER[@]}" \
