@@ -8,11 +8,16 @@ BASHINIT_FILE="$TWEAKS_DIR/bash_init"
 MOUNT_DIR_FILE="$TWEAKS_DIR/mount_dir"
 SSH_CONF_DIR="$TWEAKS_DIR/ssh"
 
-# checks files exist and are valid
-[[ "$#" -gt 1 ]] && echo 'too many parameters passed' && exit 1
+# create directories and files
 mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
 touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
+
+# various checks
+[[ "$#" -gt 1 ]] && echo 'too many parameters passed' && exit 1
 ! [[ -s "$SETUP_KEY_FILE" ]] && echo 'setup_key file is empty' && exit 1
+! [[ -s "$HOSTNAME_FILE" ]] && echo 'hostname file is empty' && exit 1
+
+# get and validate mount directory
 if [[ -s "$MOUNT_DIR_FILE" ]]; then
     MOUNT_DIR="$(realpath "$(cat "$MOUNT_DIR_FILE")")"
     MOUNT_DIR="${1:-$MOUNT_DIR}"
