@@ -56,7 +56,7 @@ volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 
 # make sure a container is running as a daemon, and if needed launch an interactive terminal
 if [[ "$(podman ps -q --filter "ancestor=$IMAGE_URL" --format "{{.ID}}" | wc -l)" -eq 0 ]]; then
-    podman run --rm -d -q \
+    podman run --rm -d \
     --cap-add NET_ADMIN \
     --cap-add SYS_ADMIN \
     --cap-add NET_RAW \
@@ -69,4 +69,7 @@ if [[ "$(podman ps -q --filter "ancestor=$IMAGE_URL" --format "{{.ID}}" | wc -l)
     "${volumes[@]}" \
     "$IMAGE_URL" tini sleep infinity
 fi
-[[ -v SERVE ]] && podman exec -it "$(podman ps -q --filter "ancestor=$IMAGE_URL" --format "{{.ID}}" | head -1)" bash
+[[ ! -v SERVE ]] && podman exec -it "$(podman ps -q --filter "ancestor=$IMAGE_URL" --format "{{.ID}}" | head -1)" bash
+
+# exit with correct status code
+exit 0
