@@ -17,6 +17,7 @@
 #   $1              ---> specify mount directory (overrides the one specified in the mount_dir file)
 
 # variables
+IMAGE_URL="ghcr.io/daniele47/netbird-client:latest"
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 TWEAKS_DIR="$SCRIPT_DIR/.tweaks"
 SETUP_KEY_FILE="$TWEAKS_DIR/setup_key"
@@ -53,10 +54,18 @@ fi
 volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 [[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
 
-# daemonize container
+# daemonize container and assert there is a single serving container
 ITER=(-it)
 CMD=(bash)
-[[ -v SERVE ]] && ITER=(-d) && CMD=(sleep infinity)
+if [[ -v SERVE ]]; then
+    serving_count=$(podman ps -q --filter "ancestor=$IMAGE_URL" --filter "command=sleep" --format "{{.ID}}" | wc -l)
+    if [[ "$serving_count" -ge 1 ]]; then
+        echo -e "\e[1;31mError: Already have $serving_count serving containers running\e[m" >&2
+        exit 1
+    fi
+    ITER=(-d)
+    CMD=(sleep infinity)
+fi
 
 # launch container
 podman run --rm "${ITER[@]}" \
@@ -70,4 +79,4 @@ podman run --rm "${ITER[@]}" \
     --security-opt label=type:container_runtime_t \
     -w /root \
     "${volumes[@]}" \
-    ghcr.io/daniele47/netbird-client "${CMD[@]}"
+    "$IMAGE_URL" "${CMD[@]}"
