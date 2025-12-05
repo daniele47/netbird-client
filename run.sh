@@ -3,14 +3,15 @@
 SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
 TWEAKS_DIR="$SCRIPT_DIR/.tweaks"
 SETUP_KEY_FILE="$TWEAKS_DIR/setup_key"
+HOSTNAME_FILE="$TWEAKS_DIR/hostname"
 BASHINIT_FILE="$TWEAKS_DIR/bash_init"
 MOUNT_DIR_FILE="$TWEAKS_DIR/mount_dir"
 SSH_CONF_DIR="$TWEAKS_DIR/ssh"
 
-# checks files exist
+# checks files exist and are valid
 [[ "$#" -gt 1 ]] && echo 'too many parameters passed' && exit 1
 mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
-touch "$SETUP_KEY_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
+touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
 ! [[ -s "$SETUP_KEY_FILE" ]] && echo 'setup_key file is empty' && exit 1
 if [[ -s "$MOUNT_DIR_FILE" ]]; then
     MOUNT_DIR="$(realpath "$(cat "$MOUNT_DIR_FILE")")"
@@ -30,12 +31,14 @@ fi
 volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 [[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
 
+# launch container
 podman run --rm -it \
     --cap-add NET_ADMIN \
     --cap-add SYS_ADMIN \
     --cap-add NET_RAW \
     --device /dev/net/tun \
     -e NB_SETUP_KEY="$(cat "$SETUP_KEY_FILE")" \
+    -e NB_HOSTNAME="$(cat "$HOSTNAME_FILE")" \
     --security-opt label=type:container_runtime_t \
     -w /root \
     "${volumes[@]}" \
