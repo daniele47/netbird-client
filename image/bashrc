@@ -6,7 +6,7 @@ alias ll='ls -l'
 alias lla='ls -lA'
 alias cat='bat'
 alias ls='ls -h --color=always --group-directories-first'
-alias tree='tree -C --dirsfirst'
+alias tree='tree'
 eval "$(zoxide init bash)"
 function zz() {
     if (cd "$@" &>/dev/null); then 
