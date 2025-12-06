@@ -58,6 +58,7 @@ volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 function list_containers(){
     podman ps -a -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}"
 }
+[[ "$(list_containers | wc -l)" -gt 1 ]] && echo 'there are multiple containers running' && exit 1
 if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     podman run -d \
     --cap-add NET_ADMIN \
