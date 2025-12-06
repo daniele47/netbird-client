@@ -55,8 +55,11 @@ volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 [[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
 
 # make sure a container is running as a daemon, and if needed launch an interactive terminal
-if [[ "$(podman ps -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}" | wc -l)" -eq 0 ]]; then
-    podman run --rm -d \
+function list_containers(){
+    podman ps -a -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}"
+}
+if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
+    podman run -d \
     --cap-add NET_ADMIN \
     --cap-add SYS_ADMIN \
     --cap-add NET_RAW \
@@ -68,9 +71,11 @@ if [[ "$(podman ps -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netb
     --security-opt label=type:container_runtime_t \
     -w /root \
     "${volumes[@]}" \
-    "$IMAGE_URL" tini sleep infinity
+    "$IMAGE_URL" tini sleep infinity >/dev/null
 fi
-[[ ! -v SERVE ]] && podman exec -it "$(podman ps -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}" | head -1)" bash
+container="$(list_containers | head -1)"
+podman start "$container" >/dev/null
+[[ ! -v SERVE ]] && podman exec -it "$container" bash
 
 # exit with correct status code
 exit 0
