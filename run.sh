@@ -19,6 +19,8 @@
 # parameters:
 #   $1              ---> specify mount directory (overrides the one specified in the mount_dir file)
 
+set -euo pipefail
+
 # variables
 IMAGE_URL="ghcr.io/daniele47/netbird-client:latest"
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
@@ -56,6 +58,7 @@ touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
 [[ -v SERVE && -v STOP ]] && clr_msg error 'SERVE and STOP cannot be used togheter' && exit 1
 
 # get and validate mount directory
+MOUNT_DIR=""
 if [[ -s "$MOUNT_DIR_FILE" ]]; then
     MOUNT_DIR="$(realpath "$(cat "$MOUNT_DIR_FILE")")"
     MOUNT_DIR="${1:-$MOUNT_DIR}"
@@ -107,7 +110,6 @@ container="$(list_containers | head -1)"
 container_hash="$(podman inspect "$container" --format '{{ index .Config.Labels "script_hash" }}')"
 [[ "$SCRIPT_HASH" != "$container_hash" ]] && clr_msg error "script hash doesn't match container hash. restart the container" && exit 1
 # TODO: get container current state, and start/unpause/...
-[[ ! -v SERVE ]] && podman exec -it "$container" bash
-
-# exit with correct status code
-exit 0
+if [[ ! -v SERVE ]]; then
+    podman exec -it "$container" bash
+fi
