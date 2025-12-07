@@ -84,7 +84,7 @@ fi
 if [[ -v STOP ]] || [[ -v RESTART ]]; then
     list_containers | while read -r line; do
         output="$(podman rm -f "$line")"
-        clr_msg verbose "removing '$output' container"
+        clr_msg verbose "removing container '$output'"
     done
     [[ -v STOP ]] && exit
 fi
@@ -104,12 +104,27 @@ if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     -w /root \
     "${volumes[@]}" \
     "$IMAGE_URL" tini sleep infinity)"
-    clr_msg verbose "launched new '$output' container"
+    clr_msg verbose "launched new countainer '$output'"
 fi
 container="$(list_containers | head -1)"
 container_hash="$(podman inspect "$container" --format '{{ index .Config.Labels "script_hash" }}')"
 [[ "$SCRIPT_HASH" != "$container_hash" ]] && clr_msg error "script hash doesn't match container hash. restart the container" && exit 1
-# TODO: get container current state, and start/unpause/...
+container_state="$(podman inspect -f '{{.State.Status}}' "$container")"
+case "$container_state" in 
+    running) ;;
+    exited|created)
+            clr_msg verbose "starting container from $container_state state"
+            podman start "$container" >/dev/null
+            ;;
+        paused)
+            clr_msg verbose "unpausing container"
+            podman unpause "$container" >/dev/null
+            ;;
+    *) 
+        clr_msg error "not managed container state '$container_state'"
+        exit 1
+        ;;
+esac
 if [[ ! -v SERVE ]]; then
     podman exec -it "$container" bash
 fi
