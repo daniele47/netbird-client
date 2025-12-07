@@ -82,11 +82,20 @@ fi
 if [[ -v STOP ]] || [[ -v RESTART ]]; then
     list_containers | while read -r line; do
         output="$(podman rm -f "$line")"
-        clr_msg verbose "removing container '$output'"
+        clr_msg verbose "removed container '$output'"
     done
     [[ -v STOP ]] && exit
+elif [[ "$(list_containers | wc -l)" -gt 1 ]]; then
+        clr_msg error 'there are multiple containers running'
+        exit 1
+elif [[ "$(list_containers | wc -l)" -eq 1 ]]; then
+    container="$(list_containers | head -1)"
+    container_hash="$(podman inspect "$container" --format '{{ index .Config.Labels "script_hash" }}')"
+    if [[ "$SCRIPT_HASH" != "$container_hash" ]]; then
+        podman rm -f "$container" >/dev/null
+        clr_msg verbose "removed invalid container '$container'"
+    fi
 fi
-[[ "$(list_containers | wc -l)" -gt 1 ]] && clr_msg error 'there are multiple containers running' && exit 1
 if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     output="$(podman run -d \
     --cap-add NET_ADMIN \
@@ -104,9 +113,9 @@ if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     "$IMAGE_URL" tini sleep infinity)"
     clr_msg verbose "launched new countainer '$output'"
 fi
+
+# set container in running state and launch if necessary
 container="$(list_containers | head -1)"
-container_hash="$(podman inspect "$container" --format '{{ index .Config.Labels "script_hash" }}')"
-[[ "$SCRIPT_HASH" != "$container_hash" ]] && clr_msg error "script hash doesn't match container hash. restart the container" && exit 1
 container_state="$(podman inspect -f '{{.State.Status}}' "$container")"
 case "$container_state" in 
     running) ;;
