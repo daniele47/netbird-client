@@ -79,18 +79,21 @@ if [[ -n "$MOUNT_DIR" ]]; then
 fi
 
 # run container and launch if necessary
-if [[ -v STOP ]] || [[ -v RESTART ]] || [[ "$(list_containers | wc -l)" -gt 1 ]]; then
+if [[ -v STOP ]] || [[ -v RESTART ]]; then
     list_containers | while read -r line; do
         output="$(podman rm -f "$line")"
         clr_msg verbose "removed container '$output'"
     done
     [[ -v STOP ]] && exit
+elif [[ "$(list_containers | wc -l)" -gt 1 ]]; then
+    clr_msg error "there are multiple containers running"
+    exit 1
 elif [[ "$(list_containers | wc -l)" -eq 1 ]]; then
     container="$(list_containers | head -1)"
     container_hash="$(podman inspect "$container" --format '{{ index .Config.Labels "script_hash" }}')"
     if [[ "$SCRIPT_HASH" != "$container_hash" ]]; then
-        podman rm -f "$container" >/dev/null
-        clr_msg verbose "removed invalid container '$container'"
+        clr_msg error "script hash and container hash do not match. restart the container"
+        exit 1
     fi
 fi
 if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
