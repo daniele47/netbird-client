@@ -13,7 +13,8 @@
 # environment variables:
 #   SERVE           ---> if present run the container non interactively in the background
 #   STOP            ---> remove all containers managed by the script
-#   RESTAT          ---> remove all containers managed by the script and then launch a new one
+#   RESTART         ---> remove all containers managed by the script and then launch a new one
+#   VERBOSE         ---> verbose output
 #
 # parameters:
 #   $1              ---> specify mount directory (overrides the one specified in the mount_dir file)
@@ -30,16 +31,29 @@ BASHINIT_FILE="$TWEAKS_DIR/bash_init"
 MOUNT_DIR_FILE="$TWEAKS_DIR/mount_dir"
 SSH_CONF_DIR="$TWEAKS_DIR/ssh"
 
+# utility functions
+function clr_msg(){
+    case "$1" in
+        error) echo -e "\e[1;31mERROR: ${@:2}\e[m";;
+        warning) echo -e "\e[1;33mWARNING: ${@:2}\e[m" ;;
+        verbose) [[ -v VERBOSE ]] && echo -e "\e[1;34mVERBOSE: ${@:2}\e[m" ;;
+        *) "$FUNCNAME" warning "INVALID CLG_MSG PARAMETER: '$1'" ;;
+    esac
+}
+function list_containers(){
+    podman ps -a -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}"
+}
+
 # create directories and files
 mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
 touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
 
 # various checks
-[[ "$#" -gt 1 ]] && echo 'too many parameters passed' && exit 1
-! [[ -s "$SETUP_KEY_FILE" ]] && echo 'setup_key file is empty' && exit 1
-! [[ -s "$HOSTNAME_FILE" ]] && echo 'hostname file is empty' && exit 1
-[[ -v RESTART && -v STOP ]] && echo 'RESTART and STOP cannot be used togheter' && exit 1
-[[ -v SERVE && -v STOP ]] && echo 'SERVE and STOP cannot be used togheter' && exit 1
+[[ "$#" -gt 1 ]] && clr_msg error 'too many parameters passed' && exit 1
+! [[ -s "$SETUP_KEY_FILE" ]] && clr_msg error 'setup_key file is empty' && exit 1
+! [[ -s "$HOSTNAME_FILE" ]] && clr_msg error 'hostname file is empty' && exit 1
+[[ -v RESTART && -v STOP ]] && clr_msg error 'RESTART and STOP cannot be used togheter' && exit 1
+[[ -v SERVE && -v STOP ]] && clr_msg error 'SERVE and STOP cannot be used togheter' && exit 1
 
 # get and validate mount directory
 if [[ -s "$MOUNT_DIR_FILE" ]]; then
@@ -47,30 +61,33 @@ if [[ -s "$MOUNT_DIR_FILE" ]]; then
     MOUNT_DIR="${1:-$MOUNT_DIR}"
     MOUNT_DIR_DIR="$(dirname "$MOUNT_DIR")"
     if [ ! -d "$MOUNT_DIR" ] || [ ! -w "$MOUNT_DIR" ] || [ ! -O "$MOUNT_DIR" ]; then
-        echo "invalid mount dir: $MOUNT_DIR"
+        clr_msg error "invalid mount dir: $MOUNT_DIR"
         exit 1
     fi
     if [ ! -d "$MOUNT_DIR_DIR" ] || [ ! -w "$MOUNT_DIR_DIR" ] || [ ! -O "$MOUNT_DIR_DIR" ]; then
-        echo "invalid mount dir: $MOUNT_DIR"
+        clr_msg error "invalid mount dir: $MOUNT_DIR"
         exit 1
     fi
 fi 
 
 # mount bash init if it exists
 volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
-[[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
+if [[ -n "$MOUNT_DIR" ]]; then
+    volumes+=( -v "$MOUNT_DIR:/data" -w /data )
+    clr_msg verbose "mounting '$MOUNT_DIR' into the container"
+fi
 
 # run container and launch if necessary
-function list_containers(){
-    podman ps -a -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}"
-}
 if [[ -v STOP ]] || [[ -v RESTART ]]; then
-    list_containers | while read -r line; do podman rm -f "$line"; done >/dev/null
+    list_containers | while read -r line; do
+        output="$(podman rm -f "$line")"
+        clr_msg verbose "removing '$output' container"
+    done
     [[ -v STOP ]] && exit
 fi
-[[ "$(list_containers | wc -l)" -gt 1 ]] && echo 'there are multiple containers running' && exit 1
+[[ "$(list_containers | wc -l)" -gt 1 ]] && clr_msg error 'there are multiple containers running' && exit 1
 if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
-    podman run -d \
+    output="$(podman run -d \
     --cap-add NET_ADMIN \
     --cap-add SYS_ADMIN \
     --cap-add NET_RAW \
@@ -83,12 +100,13 @@ if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     --security-opt label=type:container_runtime_t \
     -w /root \
     "${volumes[@]}" \
-    "$IMAGE_URL" tini sleep infinity >/dev/null
+    "$IMAGE_URL" tini sleep infinity)"
+    clr_msg verbose "launched new '$output' container"
 fi
 container="$(list_containers | head -1)"
 container_hash="$(podman inspect "$container" --format '{{ index .Config.Labels "script_hash" }}')"
-[[ "$SCRIPT_HASH" != "$container_hash" ]] && echo "script hash doesn't match container hash. restart the container" && exit 1
-podman start "$container" >/dev/null
+[[ "$SCRIPT_HASH" != "$container_hash" ]] && clr_msg error "script hash doesn't match container hash. restart the container" && exit 1
+# TODO: get container current state, and start/unpause/...
 [[ ! -v SERVE ]] && podman exec -it "$container" bash
 
 # exit with correct status code
