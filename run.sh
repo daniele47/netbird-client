@@ -19,8 +19,6 @@
 # parameters:
 #   $1              ---> specify mount directory (overrides the one specified in the mount_dir file)
 
-set -euo pipefail
-
 # variables
 IMAGE_URL="ghcr.io/daniele47/netbird-client:latest"
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
@@ -125,6 +123,4 @@ case "$container_state" in
         exit 1
         ;;
 esac
-if [[ ! -v SERVE ]]; then
-    podman exec -it "$container" bash
-fi
+if [[ ! -v SERVE ]]; then podman exec -it "$container" bash; fi
