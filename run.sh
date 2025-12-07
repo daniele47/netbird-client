@@ -69,8 +69,6 @@ if [[ -v STOP ]] || [[ -v RESTART ]]; then
     [[ -v STOP ]] && exit
 fi
 [[ "$(list_containers | wc -l)" -gt 1 ]] && echo 'there are multiple containers running' && exit 1
-container_hash="$(podman inspect distracted_ramanujan --format '{{ index .Config.Labels "script_hash" }}')"
-[[ "$SCRIPT_HASH" != "$container_hash" ]] && echo "script hash doesn't match container hash. restart the container" && exit 1
 if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     podman run -d \
     --cap-add NET_ADMIN \
@@ -88,6 +86,8 @@ if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     "$IMAGE_URL" tini sleep infinity >/dev/null
 fi
 container="$(list_containers | head -1)"
+container_hash="$(podman inspect "$container" --format '{{ index .Config.Labels "script_hash" }}')"
+[[ "$SCRIPT_HASH" != "$container_hash" ]] && echo "script hash doesn't match container hash. restart the container" && exit 1
 podman start "$container" >/dev/null
 [[ ! -v SERVE ]] && podman exec -it "$container" bash
 
