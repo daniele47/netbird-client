@@ -20,7 +20,9 @@
 
 # variables
 IMAGE_URL="ghcr.io/daniele47/netbird-client:latest"
-SCRIPT_DIR="$(dirname "$(realpath "${BASH_SOURCE[0]}")")"
+SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
+SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
+SCRIPT_HASH="$(sha256sum "$SCRIPT_PATH" | cut -d' ' -f1)"
 TWEAKS_DIR="$SCRIPT_DIR/.tweaks"
 SETUP_KEY_FILE="$TWEAKS_DIR/setup_key"
 HOSTNAME_FILE="$TWEAKS_DIR/hostname"
@@ -67,6 +69,8 @@ if [[ -v STOP ]] || [[ -v RESTART ]]; then
     [[ -v STOP ]] && exit
 fi
 [[ "$(list_containers | wc -l)" -gt 1 ]] && echo 'there are multiple containers running' && exit 1
+container_hash="$(podman inspect distracted_ramanujan --format '{{ index .Config.Labels "script_hash" }}')"
+[[ "$SCRIPT_HASH" != "$container_hash" ]] && echo "script hash doesn't match container hash. restart the container" && exit 1
 if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     podman run -d \
     --cap-add NET_ADMIN \
@@ -74,6 +78,7 @@ if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     --cap-add NET_RAW \
     --device /dev/net/tun \
     --label "script=netbird-client" \
+    --label "script_hash=$SCRIPT_HASH" \
     -e NB_SETUP_KEY="$(cat "$SETUP_KEY_FILE")" \
     -e NB_HOSTNAME="$(cat "$HOSTNAME_FILE")" \
     --hostname "$(cat "$HOSTNAME_FILE")" \
