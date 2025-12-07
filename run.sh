@@ -12,6 +12,8 @@
 #
 # environment variables:
 #   SERVE           ---> if present run the container non interactively in the background
+#   STOP            ---> remove all containers managed by the script
+#   RESTAT          ---> remove all containers managed by the script and then launch a new one
 #
 # parameters:
 #   $1              ---> specify mount directory (overrides the one specified in the mount_dir file)
@@ -34,6 +36,8 @@ touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
 [[ "$#" -gt 1 ]] && echo 'too many parameters passed' && exit 1
 ! [[ -s "$SETUP_KEY_FILE" ]] && echo 'setup_key file is empty' && exit 1
 ! [[ -s "$HOSTNAME_FILE" ]] && echo 'hostname file is empty' && exit 1
+[[ -v RESTART && -v STOP ]] && echo 'RESTART and STOP cannot be used togheter' && exit 1
+[[ -v SERVE && -v STOP ]] && echo 'SERVE and STOP cannot be used togheter' && exit 1
 
 # get and validate mount directory
 if [[ -s "$MOUNT_DIR_FILE" ]]; then
@@ -54,10 +58,14 @@ fi
 volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
 [[ -n "$MOUNT_DIR" ]] && volumes+=( -v "$MOUNT_DIR:/data" -w /data )
 
-# make sure a container is running as a daemon, and if needed launch an interactive terminal
+# run container and launch if necessary
 function list_containers(){
     podman ps -a -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}"
 }
+if [[ -v STOP ]] || [[ -v RESTART ]]; then
+    list_containers | while read -r line; do podman rm -f "$line"; done >/dev/null
+    [[ -v STOP ]] && exit
+fi
 [[ "$(list_containers | wc -l)" -gt 1 ]] && echo 'there are multiple containers running' && exit 1
 if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     podman run -d \
