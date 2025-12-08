@@ -8,14 +8,11 @@
 #   ├── hostname    ---> specifies container hostname to netbird
 #   └── setup_key   ---> specified setup key to access netbird vpn network
 #
-# environment variables:
-#   SERVE           ---> if present run the container non interactively in the background
-#   STOP            ---> remove all containers managed by the script
-#   RESTART         ---> remove all containers managed by the script and then launch a new one
-#   VERBOSE         ---> verbose output
-#
-# parameters:
-#   $1              ---> specify mount directory (overrides the one specified in the mount_dir file)
+# option flags:
+#   -s              ---> serve container non interactively in the background
+#   -e              ---> end container managed by the script
+#   -r              ---> restart container managed by the script
+#   -v              ---> verbose output
 
 set -euo pipefail
 trap 'echo "SCRIPT FAILURE: line $LINENO, exit code: $?, command: $BASH_COMMAND"' ERR
@@ -48,19 +45,30 @@ mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
 touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE"
 
 # various checks
-if [[ "$#" -gt 0 ]]; then clr_msg error 'no parameter accepted'; fi
 if [[ ! -s "$SETUP_KEY_FILE" ]]; then clr_msg error 'setup_key file is empty'; fi
 if [[ ! -s "$HOSTNAME_FILE" ]]; then clr_msg error 'hostname file is empty'; fi
-if [[ -v RESTART && -v STOP ]]; then clr_msg error 'RESTART and STOP cannot be used togheter'; fi
-if [[ -v SERVE && -v STOP ]]; then clr_msg error 'SERVE and STOP cannot be used togheter'; fi
+
+# parse flags
+END=false SERVE=false RESTART=false VERBOSE=false
+while getopts ":esrv" opt; do
+    case $opt in
+        e) END=true ;;
+        s) SERVE=true ;;
+        r) RESTART=true ;;
+        v) VERBOSE=true ;;
+        *) clr_msg error "Unknown option -$OPTARG" ;;
+    esac
+done
+if "$RESTART" && "$END"; then clr_msg error 'RESTART and END cannot be used togheter'; fi
+if "$SERVE" && "$END"; then clr_msg error 'SERVE and END cannot be used togheter'; fi
 
 # run container and launch if necessary
-if [[ -v STOP ]] || [[ -v RESTART ]]; then
+if "$END" || "$RESTART"; then
     list_containers | while read -r line; do
         output="$(podman rm -f "$line")"
         clr_msg verbose "removed container '$output'"
     done
-    if [[ -v STOP ]]; then exit; fi
+    if "$END"; then exit; fi
 elif [[ "$(list_containers | wc -l)" -gt 1 ]]; then
     clr_msg error "there are multiple containers running"
 elif [[ "$(list_containers | wc -l)" -eq 1 ]]; then
@@ -101,8 +109,6 @@ case "$container_state" in
             clr_msg verbose "unpausing container"
             podman unpause "$container" >/dev/null
             ;;
-    *) 
-        clr_msg error "not managed container state '$container_state'"
-        ;;
+    *) clr_msg error "not managed container state '$container_state'" ;;
 esac
-if [[ ! -v SERVE ]]; then podman exec -it "$container" bash; fi
+if ! "$SERVE"; then podman exec -it "$container" bash; fi
