@@ -30,10 +30,10 @@ SSH_CONF_DIR="$TWEAKS_DIR/ssh"
 # utility functions
 function clr_msg(){
     case "$1" in
-        error) echo -e "\e[1;31mERROR: ${@:2}\e[m";;
+        error) echo -e "\e[1;31mERROR: ${@:2}\e[m"; exit 1;;
         warning) echo -e "\e[1;33mWARNING: ${@:2}\e[m" ;;
         verbose) [[ -v VERBOSE ]] && echo -e "\e[1;34mVERBOSE: ${@:2}\e[m" ;;
-        *) "$FUNCNAME" warning "INVALID CLG_MSG PARAMETER: '$1'" ;;
+        *) "$FUNCNAME" error "INVALID CLG_MSG PARAMETER: '$1'" ;;
     esac
 }
 function list_containers(){
@@ -45,11 +45,11 @@ mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
 touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE"
 
 # various checks
-[[ "$#" -gt 0 ]] && clr_msg error 'no parameter accepted' && exit 1
-! [[ -s "$SETUP_KEY_FILE" ]] && clr_msg error 'setup_key file is empty' && exit 1
-! [[ -s "$HOSTNAME_FILE" ]] && clr_msg error 'hostname file is empty' && exit 1
-[[ -v RESTART && -v STOP ]] && clr_msg error 'RESTART and STOP cannot be used togheter' && exit 1
-[[ -v SERVE && -v STOP ]] && clr_msg error 'SERVE and STOP cannot be used togheter' && exit 1
+[[ "$#" -gt 0 ]] && clr_msg error 'no parameter accepted'
+! [[ -s "$SETUP_KEY_FILE" ]] && clr_msg error 'setup_key file is empty'
+! [[ -s "$HOSTNAME_FILE" ]] && clr_msg error 'hostname file is empty'
+[[ -v RESTART && -v STOP ]] && clr_msg error 'RESTART and STOP cannot be used togheter'
+[[ -v SERVE && -v STOP ]] && clr_msg error 'SERVE and STOP cannot be used togheter'
 
 # mount necessary directories
 volumes=(-v "$SSH_CONF_DIR:/root/.ssh")
@@ -63,13 +63,11 @@ if [[ -v STOP ]] || [[ -v RESTART ]]; then
     [[ -v STOP ]] && exit
 elif [[ "$(list_containers | wc -l)" -gt 1 ]]; then
     clr_msg error "there are multiple containers running"
-    exit 1
 elif [[ "$(list_containers | wc -l)" -eq 1 ]]; then
     container="$(list_containers | head -1)"
     container_hash="$(podman inspect "$container" --format '{{ index .Config.Labels "script_hash" }}')"
     if [[ "$SCRIPT_HASH" != "$container_hash" ]]; then
         clr_msg error "script hash and container hash do not match. restart the container"
-        exit 1
     fi
 fi
 if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
@@ -105,7 +103,6 @@ case "$container_state" in
             ;;
     *) 
         clr_msg error "not managed container state '$container_state'"
-        exit 1
         ;;
 esac
 if [[ ! -v SERVE ]]; then podman exec -it "$container" bash; fi
