@@ -60,6 +60,7 @@ SERVE HELP s h
 END RESTART e r
 END HELP e h
 RESTART HELP r h
+VERBOSE HELP v h
 EOF
 if "$invalid_flags"; then exit 1; fi
 
@@ -77,8 +78,8 @@ if "$HELP"; then
     -s [  rv ]      ---> serve container non interactively in the background
     -e [   v ]      ---> end container managed by the script
     -r [s  v ]      ---> restart container managed by the script
-    -v [ser h]      ---> verbose output
-    -h [   v ]      ---> help message
+    -v [ser  ]      ---> verbose output
+    -h [     ]      ---> help message
     '
     exit 0;
 fi
