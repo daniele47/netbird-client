@@ -4,7 +4,7 @@ set -euo pipefail
 trap 'echo "SCRIPT FAILURE: line $LINENO, exit code: $?, command: $BASH_COMMAND"' ERR
 
 # variables
-IMAGE_URL="ghcr.io/user/netbird-client:latest"
+IMAGE_URL="ghcr.io/daniele47/netbird-client:latest"
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 SCRIPT_HASH="$(sha256sum "$SCRIPT_PATH" | cut -d' ' -f1)"
@@ -29,13 +29,6 @@ function list_containers(){
 
 # parse flags
 END=false SERVE=false RESTART=false VERBOSE=false HELP=false
-declare -A ALLOWED_WITH=(
-    ["s"]="rv"
-    ["e"]="v"
-    ["r"]="sv"
-    ["v"]="serh"
-    ["h"]="v"
-)
 while getopts ":servh" opt; do
     case $opt in
         s) SERVE=true ;;
@@ -46,6 +39,13 @@ while getopts ":servh" opt; do
         *) clr_msg error "Unknown option -$OPTARG" ;;
     esac
 done
+case true in
+     $("$SERVE" && "$END")) clr_msg error '-s and -e cannot be used togheter' ;;
+     $("$SERVE" && "$HELP")) clr_msg error '-s and -h cannot be used togheter' ;;
+     $("$END" && "$RESTART")) clr_msg error '-e and -r cannot be used togheter' ;;
+     $("$END" && "$HELP")) clr_msg error '-e and -h cannot be used togheter' ;;
+     $("$RESTART" && "$HELP")) clr_msg error '-r and -h cannot be used togheter' ;;
+esac
 
 # show help message if necessary
 if "$HELP"; then
@@ -58,11 +58,11 @@ if "$HELP"; then
     └── setup_key   ---> specified setup key to access netbird vpn network
 
     option flags:
-    -s              ---> serve container non interactively in the background
-    -e              ---> end container managed by the script
-    -r              ---> restart container managed by the script
-    -v              ---> verbose output
-    -h              ---> help message
+    -s [  rv ]      ---> serve container non interactively in the background
+    -e [   v ]      ---> end container managed by the script
+    -r [s  v ]      ---> restart container managed by the script
+    -v [ser h]      ---> verbose output
+    -h [   v ]      ---> help message
     '
     exit 0;
 fi
