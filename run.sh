@@ -48,18 +48,19 @@ while getopts ":servh" opt; do
             ;;
     esac
 done
-function invalid_combo_error(){
-            if [[ "${invalid_combos["$1-$2"]:-0}" == 0 ]]; then
-                clr_msg error "-$1 and -$2 cannot be used togheter";
-                invalid_flags=true
-                invalid_combos["$1-$2"]=1
-            fi
-}
-if "$SERVE" && "$END"; then invalid_combo_error s e; fi
-if "$SERVE" && "$HELP"; then invalid_combo_error s h; fi
-if "$END" && "$RESTART"; then invalid_combo_error e r; fi
-if "$END" && "$HELP"; then invalid_combo_error e h; fi
-if "$RESTART" && "$HELP"; then invalid_combo_error r h; fi
+while read -r VAR1 VAR2 FLAG1 FLAG2; do
+    if "${!VAR1}" && "${!VAR2}" && [[ "${invalid_combos["$FLAG1-$FLAG2"]:-0}" == 0 ]]; then
+        clr_msg error "-$FLAG1 and -$FLAG2 cannot be used togheter";
+        invalid_flags=true
+        invalid_combos["$FLAG1-$FLAG2"]=1
+    fi
+done <<EOF
+SERVE END s e
+SERVE HELP s h
+END RESTART e r
+END HELP e h
+RESTART HELP r h
+EOF
 if "$invalid_flags"; then exit 1; fi
 
 # show help message if necessary
