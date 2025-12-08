@@ -32,7 +32,7 @@ function clr_msg(){
     case "$1" in
         error) echo -e "\e[1;31mERROR: ${@:2}\e[m"; exit 1;;
         warning) echo -e "\e[1;33mWARNING: ${@:2}\e[m" ;;
-        verbose) if [[ -v VERBOSE ]]; then echo -e "\e[1;34mVERBOSE: ${@:2}\e[m"; fi ;;
+        verbose) if "$VERBOSE"; then echo -e "\e[1;34mVERBOSE: ${@:2}\e[m"; fi ;;
         *) "$FUNCNAME" error "INVALID CLG_MSG PARAMETER: '$1'" ;;
     esac
 }
