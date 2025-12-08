@@ -1,19 +1,5 @@
 #!/bin/bash
 
-# script to spun up a single netbird container, which is then shared
-#
-# configurable files:
-#   .tweaks/
-#   ├── ssh/        ---> mounted to /root/.ssh
-#   ├── hostname    ---> specifies container hostname to netbird
-#   └── setup_key   ---> specified setup key to access netbird vpn network
-#
-# option flags:
-#   -s              ---> serve container non interactively in the background
-#   -e              ---> end container managed by the script
-#   -r              ---> restart container managed by the script
-#   -v              ---> verbose output
-
 set -euo pipefail
 trap 'echo "SCRIPT FAILURE: line $LINENO, exit code: $?, command: $BASH_COMMAND"' ERR
 
@@ -33,11 +19,29 @@ function clr_msg(){
         error) echo -e "\e[1;31mERROR: ${@:2}\e[m"; exit 1;;
         warning) echo -e "\e[1;33mWARNING: ${@:2}\e[m" ;;
         verbose) if "$VERBOSE"; then echo -e "\e[1;34mVERBOSE: ${@:2}\e[m"; fi ;;
+        help) echo -e "\e[1;37m${@:2}\e[m" ;;
         *) "$FUNCNAME" error "INVALID CLG_MSG PARAMETER: '$1'" ;;
     esac
 }
 function list_containers(){
     podman ps -a -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}"
+}
+function help_msg(){
+    clr_msg help 'script to spun up a single netbird container, which is then shared
+
+configurable files:
+    .tweaks/
+    ├── ssh/        ---> mounted to /root/.ssh
+    ├── hostname    ---> specifies container hostname to netbird
+    └── setup_key   ---> specified setup key to access netbird vpn network
+
+option flags:
+    -s [  rv ]      ---> serve container non interactively in the background
+    -e [   v ]      ---> end container managed by the script
+    -r [s  v ]      ---> restart container managed by the script
+    -v [ser  ]      ---> verbose output
+    -h [   v ]      ---> help message
+    '
 }
 
 # create directories and files
@@ -49,18 +53,20 @@ if [[ ! -s "$SETUP_KEY_FILE" ]]; then clr_msg error 'setup_key file is empty'; f
 if [[ ! -s "$HOSTNAME_FILE" ]]; then clr_msg error 'hostname file is empty'; fi
 
 # parse flags
-END=false SERVE=false RESTART=false VERBOSE=false
-while getopts ":esrv" opt; do
+END=false SERVE=false RESTART=false VERBOSE=false HELP=false
+while getopts ":servh" opt; do
     case $opt in
-        e) END=true ;;
         s) SERVE=true ;;
+        e) END=true ;;
         r) RESTART=true ;;
         v) VERBOSE=true ;;
+        h) HELP=true ;;
         *) clr_msg error "Unknown option -$OPTARG" ;;
     esac
 done
 if "$RESTART" && "$END"; then clr_msg error 'RESTART and END cannot be used togheter'; fi
 if "$SERVE" && "$END"; then clr_msg error 'SERVE and END cannot be used togheter'; fi
+if "$HELP"; then help_msg; exit 0; fi
 
 # run container and launch if necessary
 if "$END" || "$RESTART"; then
