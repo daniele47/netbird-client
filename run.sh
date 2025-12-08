@@ -17,6 +17,9 @@
 # parameters:
 #   $1              ---> specify mount directory (overrides the one specified in the mount_dir file)
 
+set -euo pipefail
+trap 'echo "SCRIPT FAILURE: line $LINENO, exit code: $?, command: $BASH_COMMAND"' ERR
+
 # variables
 IMAGE_URL="ghcr.io/daniele47/netbird-client:latest"
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
@@ -51,9 +54,6 @@ touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE"
 [[ -v RESTART && -v STOP ]] && clr_msg error 'RESTART and STOP cannot be used togheter'
 [[ -v SERVE && -v STOP ]] && clr_msg error 'SERVE and STOP cannot be used togheter'
 
-# mount necessary directories
-volumes=(-v "$SSH_CONF_DIR:/root/.ssh")
-
 # run container and launch if necessary
 if [[ -v STOP ]] || [[ -v RESTART ]]; then
     list_containers | while read -r line; do
@@ -83,7 +83,7 @@ if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     --hostname "$(cat "$HOSTNAME_FILE")" \
     --security-opt label=type:container_runtime_t \
     -w /root \
-    "${volumes[@]}" \
+    -v "$SSH_CONF_DIR:/root/.ssh" \
     "$IMAGE_URL" tini sleep infinity)"
     clr_msg verbose "launched new countainer '$output'"
 fi
