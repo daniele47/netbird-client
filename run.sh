@@ -4,7 +4,7 @@ set -euo pipefail
 trap 'echo "SCRIPT FAILURE: line $LINENO, exit code: $?, command: $BASH_COMMAND"' ERR
 
 # variables
-IMAGE_URL="ghcr.io/daniele47/netbird-client:latest"
+IMAGE_URL="ghcr.io/user/netbird-client:latest"
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
 SCRIPT_HASH="$(sha256sum "$SCRIPT_PATH" | cut -d' ' -f1)"
@@ -27,16 +27,15 @@ function list_containers(){
     podman ps -a -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}"
 }
 
-# create directories and files
-mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
-touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE"
-
-# various checks
-if [[ ! -s "$SETUP_KEY_FILE" ]]; then clr_msg error 'setup_key file is empty'; fi
-if [[ ! -s "$HOSTNAME_FILE" ]]; then clr_msg error 'hostname file is empty'; fi
-
 # parse flags
 END=false SERVE=false RESTART=false VERBOSE=false HELP=false
+declare -A ALLOWED_WITH=(
+    ["s"]="rv"
+    ["e"]="v"
+    ["r"]="sv"
+    ["v"]="serh"
+    ["h"]="v"
+)
 while getopts ":servh" opt; do
     case $opt in
         s) SERVE=true ;;
@@ -47,8 +46,6 @@ while getopts ":servh" opt; do
         *) clr_msg error "Unknown option -$OPTARG" ;;
     esac
 done
-if "$RESTART" && "$END"; then clr_msg error 'RESTART and END cannot be used togheter'; fi
-if "$SERVE" && "$END"; then clr_msg error 'SERVE and END cannot be used togheter'; fi
 
 # show help message if necessary
 if "$HELP"; then
@@ -69,6 +66,14 @@ if "$HELP"; then
     '
     exit 0;
 fi
+
+# create directories and files
+mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
+touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE"
+
+# various checks
+if [[ ! -s "$SETUP_KEY_FILE" ]]; then clr_msg error 'setup_key file is empty'; fi
+if [[ ! -s "$HOSTNAME_FILE" ]]; then clr_msg error 'hostname file is empty'; fi
 
 # run container and launch if necessary
 if "$END" || "$RESTART"; then
