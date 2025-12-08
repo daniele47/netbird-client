@@ -16,11 +16,12 @@ SSH_CONF_DIR="$TWEAKS_DIR/ssh"
 # utility functions
 function clr_msg(){
     case "$1" in
-        error) echo -e "\e[1;31mERROR: ${@:2}\e[m"; exit 1;;
+        error) echo -e "\e[1;31mERROR: ${@:2}\e[m";;
+        err_exit) "$FUNCNAME" error "${@:2}"; exit 1 ;;
         warning) echo -e "\e[1;33mWARNING: ${@:2}\e[m" ;;
         verbose) if "$VERBOSE"; then echo -e "\e[1;34mVERBOSE: ${@:2}\e[m"; fi ;;
         help) echo -e "\e[1;37m${@:2}\e[m" ;;
-        *) "$FUNCNAME" error "INVALID CLG_MSG PARAMETER: '$1'" ;;
+        *) "$FUNCNAME" err_exit "INVALID CLG_MSG PARAMETER: '$1'" ;;
     esac
 }
 function list_containers(){
@@ -29,6 +30,7 @@ function list_containers(){
 
 # parse flags
 END=false SERVE=false RESTART=false VERBOSE=false HELP=false
+invalid_flags=false
 while getopts ":servh" opt; do
     case $opt in
         s) SERVE=true ;;
@@ -36,16 +38,15 @@ while getopts ":servh" opt; do
         r) RESTART=true ;;
         v) VERBOSE=true ;;
         h) HELP=true ;;
-        *) clr_msg error "Unknown option -$OPTARG" ;;
+        *) clr_msg error "Unknown option -$OPTARG"; invalid_flags=true ;;
     esac
 done
-case true in
-     $("$SERVE" && "$END")) clr_msg error '-s and -e cannot be used togheter' ;;
-     $("$SERVE" && "$HELP")) clr_msg error '-s and -h cannot be used togheter' ;;
-     $("$END" && "$RESTART")) clr_msg error '-e and -r cannot be used togheter' ;;
-     $("$END" && "$HELP")) clr_msg error '-e and -h cannot be used togheter' ;;
-     $("$RESTART" && "$HELP")) clr_msg error '-r and -h cannot be used togheter' ;;
-esac
+if "$SERVE" && "$END"; then clr_msg error '-s and -e cannot be used togheter'; invalid_flags=true ; fi
+if "$SERVE" && "$HELP"; then clr_msg error '-s and -h cannot be used togheter'; invalid_flags=true ; fi
+if "$END" && "$RESTART"; then clr_msg error '-e and -r cannot be used togheter'; invalid_flags=true ; fi
+if "$END" && "$HELP"; then clr_msg error '-e and -h cannot be used togheter'; invalid_flags=true ; fi
+if "$RESTART" && "$HELP"; then clr_msg error '-r and -h cannot be used togheter'; invalid_flags=true ; fi
+if "$invalid_flags"; then exit 1; fi
 
 # show help message if necessary
 if "$HELP"; then
@@ -72,8 +73,8 @@ mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
 touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE"
 
 # various checks
-if [[ ! -s "$SETUP_KEY_FILE" ]]; then clr_msg error 'setup_key file is empty'; fi
-if [[ ! -s "$HOSTNAME_FILE" ]]; then clr_msg error 'hostname file is empty'; fi
+if [[ ! -s "$SETUP_KEY_FILE" ]]; then clr_msg err_exit 'setup_key file is empty'; fi
+if [[ ! -s "$HOSTNAME_FILE" ]]; then clr_msg err_exit 'hostname file is empty'; fi
 
 # run container and launch if necessary
 if "$END" || "$RESTART"; then
@@ -83,12 +84,12 @@ if "$END" || "$RESTART"; then
     done
     if "$END"; then exit; fi
 elif [[ "$(list_containers | wc -l)" -gt 1 ]]; then
-    clr_msg error "there are multiple containers running"
+    clr_msg err_exit "there are multiple containers running"
 elif [[ "$(list_containers | wc -l)" -eq 1 ]]; then
     container="$(list_containers | head -1)"
     container_hash="$(podman inspect "$container" --format '{{ index .Config.Labels "script_hash" }}')"
     if [[ "$SCRIPT_HASH" != "$container_hash" ]]; then
-        clr_msg error "script hash and container hash do not match. restart the container"
+        clr_msg err_exit "script hash and container hash do not match. restart the container"
     fi
 fi
 if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
@@ -121,6 +122,6 @@ case "$container_state" in
             clr_msg verbose "unpausing container"
             podman unpause "$container" >/dev/null
             ;;
-    *) clr_msg error "not managed container state '$container_state'" ;;
+    *) clr_msg err_exit "not managed container state '$container_state'" ;;
 esac
 if ! "$SERVE"; then podman exec -it "$container" bash; fi
