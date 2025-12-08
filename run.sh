@@ -26,23 +26,6 @@ function clr_msg(){
 function list_containers(){
     podman ps -a -q --filter "ancestor=$IMAGE_URL" --filter "label=script=netbird-client" --format "{{.ID}}"
 }
-function help_msg(){
-    clr_msg help 'script to spun up a single netbird container, which is then shared
-
-configurable files:
-    .tweaks/
-    ├── ssh/        ---> mounted to /root/.ssh
-    ├── hostname    ---> specifies container hostname to netbird
-    └── setup_key   ---> specified setup key to access netbird vpn network
-
-option flags:
-    -s [  rv ]      ---> serve container non interactively in the background
-    -e [   v ]      ---> end container managed by the script
-    -r [s  v ]      ---> restart container managed by the script
-    -v [ser  ]      ---> verbose output
-    -h [   v ]      ---> help message
-    '
-}
 
 # create directories and files
 mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
@@ -66,7 +49,26 @@ while getopts ":servh" opt; do
 done
 if "$RESTART" && "$END"; then clr_msg error 'RESTART and END cannot be used togheter'; fi
 if "$SERVE" && "$END"; then clr_msg error 'SERVE and END cannot be used togheter'; fi
-if "$HELP"; then help_msg; exit 0; fi
+
+# show help message if necessary
+if "$HELP"; then
+    clr_msg help 'script to spun up a single netbird container, which is then shared
+
+    configurable files:
+    .tweaks/
+    ├── ssh/        ---> mounted to /root/.ssh
+    ├── hostname    ---> specifies container hostname to netbird
+    └── setup_key   ---> specified setup key to access netbird vpn network
+
+    option flags:
+    -s              ---> serve container non interactively in the background
+    -e              ---> end container managed by the script
+    -r              ---> restart container managed by the script
+    -v              ---> verbose output
+    -h              ---> help message
+    '
+    exit 0;
+fi
 
 # run container and launch if necessary
 if "$END" || "$RESTART"; then
