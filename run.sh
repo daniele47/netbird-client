@@ -35,7 +35,7 @@ function clr_msg(){
     case "$1" in
         error) echo -e "\e[1;31mERROR: ${@:2}\e[m"; exit 1;;
         warning) echo -e "\e[1;33mWARNING: ${@:2}\e[m" ;;
-        verbose) [[ -v VERBOSE ]] && echo -e "\e[1;34mVERBOSE: ${@:2}\e[m" ;;
+        verbose) if [[ -v VERBOSE ]]; then echo -e "\e[1;34mVERBOSE: ${@:2}\e[m"; fi ;;
         *) "$FUNCNAME" error "INVALID CLG_MSG PARAMETER: '$1'" ;;
     esac
 }
@@ -48,11 +48,11 @@ mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
 touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE"
 
 # various checks
-[[ "$#" -gt 0 ]] && clr_msg error 'no parameter accepted'
-! [[ -s "$SETUP_KEY_FILE" ]] && clr_msg error 'setup_key file is empty'
-! [[ -s "$HOSTNAME_FILE" ]] && clr_msg error 'hostname file is empty'
-[[ -v RESTART && -v STOP ]] && clr_msg error 'RESTART and STOP cannot be used togheter'
-[[ -v SERVE && -v STOP ]] && clr_msg error 'SERVE and STOP cannot be used togheter'
+if [[ "$#" -gt 0 ]]; then clr_msg error 'no parameter accepted'; fi
+if [[ ! -s "$SETUP_KEY_FILE" ]]; then clr_msg error 'setup_key file is empty'; fi
+if [[ ! -s "$HOSTNAME_FILE" ]]; then clr_msg error 'hostname file is empty'; fi
+if [[ -v RESTART && -v STOP ]]; then clr_msg error 'RESTART and STOP cannot be used togheter'; fi
+if [[ -v SERVE && -v STOP ]]; then clr_msg error 'SERVE and STOP cannot be used togheter'; fi
 
 # run container and launch if necessary
 if [[ -v STOP ]] || [[ -v RESTART ]]; then
@@ -60,7 +60,7 @@ if [[ -v STOP ]] || [[ -v RESTART ]]; then
         output="$(podman rm -f "$line")"
         clr_msg verbose "removed container '$output'"
     done
-    [[ -v STOP ]] && exit
+    if [[ -v STOP ]]; then exit; fi
 elif [[ "$(list_containers | wc -l)" -gt 1 ]]; then
     clr_msg error "there are multiple containers running"
 elif [[ "$(list_containers | wc -l)" -eq 1 ]]; then
