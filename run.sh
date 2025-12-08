@@ -31,6 +31,7 @@ function list_containers(){
 # parse flags
 END=false SERVE=false RESTART=false VERBOSE=false HELP=false
 invalid_flags=false
+declare -A unknow_options invalid_combos
 while getopts ":servh" opt; do
     case $opt in
         s) SERVE=true ;;
@@ -38,14 +39,27 @@ while getopts ":servh" opt; do
         r) RESTART=true ;;
         v) VERBOSE=true ;;
         h) HELP=true ;;
-        *) clr_msg error "Unknown option -$OPTARG"; invalid_flags=true ;;
+        *)
+            if [[ "${unknow_options["$OPTARG"]:-0}" == 0 ]]; then
+                clr_msg error "unknown option -$OPTARG";
+                invalid_flags=true
+                unknow_options["$OPTARG"]=1
+            fi
+            ;;
     esac
 done
-if "$SERVE" && "$END"; then clr_msg error '-s and -e cannot be used togheter'; invalid_flags=true ; fi
-if "$SERVE" && "$HELP"; then clr_msg error '-s and -h cannot be used togheter'; invalid_flags=true ; fi
-if "$END" && "$RESTART"; then clr_msg error '-e and -r cannot be used togheter'; invalid_flags=true ; fi
-if "$END" && "$HELP"; then clr_msg error '-e and -h cannot be used togheter'; invalid_flags=true ; fi
-if "$RESTART" && "$HELP"; then clr_msg error '-r and -h cannot be used togheter'; invalid_flags=true ; fi
+function invalid_combo_error(){
+            if [[ "${invalid_combos["$1-$2"]:-0}" == 0 ]]; then
+                clr_msg error "-$1 and -$2 cannot be used togheter";
+                invalid_flags=true
+                invalid_combos["$1-$2"]=1
+            fi
+}
+if "$SERVE" && "$END"; then invalid_combo_error s e; fi
+if "$SERVE" && "$HELP"; then invalid_combo_error s h; fi
+if "$END" && "$RESTART"; then invalid_combo_error e r; fi
+if "$END" && "$HELP"; then invalid_combo_error e h; fi
+if "$RESTART" && "$HELP"; then invalid_combo_error r h; fi
 if "$invalid_flags"; then exit 1; fi
 
 # show help message if necessary
