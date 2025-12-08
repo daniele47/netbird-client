@@ -5,7 +5,6 @@
 # configurable files:
 #   .tweaks/
 #   ├── ssh/        ---> mounted to /root/.ssh
-#   ├── bash_init   ---> mounted to /root/.bash_init and called from .bashrc
 #   ├── hostname    ---> specifies container hostname to netbird
 #   ├── mount_dir   ---> allows mounting a single user directory into the container
 #   └── setup_key   ---> specified setup key to access netbird vpn network
@@ -27,7 +26,6 @@ SCRIPT_HASH="$(sha256sum "$SCRIPT_PATH" | cut -d' ' -f1)"
 TWEAKS_DIR="$SCRIPT_DIR/.tweaks"
 SETUP_KEY_FILE="$TWEAKS_DIR/setup_key"
 HOSTNAME_FILE="$TWEAKS_DIR/hostname"
-BASHINIT_FILE="$TWEAKS_DIR/bash_init"
 MOUNT_DIR_FILE="$TWEAKS_DIR/mount_dir"
 SSH_CONF_DIR="$TWEAKS_DIR/ssh"
 
@@ -46,7 +44,7 @@ function list_containers(){
 
 # create directories and files
 mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
-touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE" "$BASHINIT_FILE" "$MOUNT_DIR_FILE"
+touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE" "$MOUNT_DIR_FILE"
 
 # various checks
 [[ "$#" -gt 1 ]] && clr_msg error 'too many parameters passed' && exit 1
@@ -71,8 +69,8 @@ if [[ -s "$MOUNT_DIR_FILE" ]]; then
     fi
 fi 
 
-# mount bash init if it exists
-volumes=( -v "$BASHINIT_FILE:/root/.bash_init" -v "$SSH_CONF_DIR:/root/.ssh")
+# mount necessary directories
+volumes=(-v "$SSH_CONF_DIR:/root/.ssh")
 if [[ -n "$MOUNT_DIR" ]]; then
     volumes+=( -v "$MOUNT_DIR:/data" -w /data )
     clr_msg verbose "mounting '$MOUNT_DIR' into the container"
