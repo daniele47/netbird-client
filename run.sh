@@ -97,7 +97,6 @@ if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     -e NB_SETUP_KEY="$(cat "$SETUP_KEY_FILE")" \
     -e NB_HOSTNAME="$(cat "$HOSTNAME_FILE")" \
     --hostname "$(cat "$HOSTNAME_FILE")" \
-    --security-opt label=type:container_runtime_t \
     -w /root \
     -v "$SSH_CONF_DIR:/root/.ssh" \
     "$IMAGE_URL" tini sleep infinity)"
