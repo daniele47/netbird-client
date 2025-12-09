@@ -16,11 +16,11 @@ SSH_CONF_DIR="$TWEAKS_DIR/ssh"
 # utility functions
 function clr_msg(){
     case "$1" in
-        error) echo -e "\e[1;31mERROR: ${@:2}\e[m";;
+        error) echo -e "\e[1;31mERROR: ${@:2}\e[m" >&2;;
         err_exit) "$FUNCNAME" error "${@:2}"; exit 1 ;;
-        warning) echo -e "\e[1;33mWARNING: ${@:2}\e[m" ;;
-        verbose) if "$VERBOSE"; then echo -e "\e[1;34mVERBOSE: ${@:2}\e[m"; fi ;;
-        help) echo -e "\e[1;37m${@:2}\e[m" ;;
+        warning) echo -e "\e[1;33mWARNING: ${@:2}\e[m" >&2;;
+        verbose) if "$VERBOSE"; then echo -e "\e[1;34mVERBOSE: ${@:2}\e[m" >&2; fi ;;
+        help) echo -e "\e[1;37m${@:2}\e[m" >&2;;
         *) "$FUNCNAME" err_exit "INVALID CLG_MSG PARAMETER: '$1'" ;;
     esac
 }
