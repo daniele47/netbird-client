@@ -70,7 +70,7 @@ if "$HELP"; then
 
     configurable files:
     .tweaks/
-    ├── ssh/        ---> mounted to /root/.ssh
+    ├── ssh/        ---> copied to /root/.ssh on container creation
     ├── hostname    ---> specifies container hostname to netbird
     └── setup_key   ---> specified setup key to access netbird vpn network
 
@@ -120,9 +120,9 @@ if [[ "$(list_containers | wc -l)" -eq 0 ]]; then
     -e NB_HOSTNAME="$(cat "$HOSTNAME_FILE")" \
     --hostname "$(cat "$HOSTNAME_FILE")" \
     -w /root \
-    -v "$SSH_CONF_DIR:/root/.ssh" \
     "$IMAGE_URL" tini sleep infinity)"
     clr_msg verbose "launched new countainer '$output'"
+    podman cp "$SSH_CONF_DIR" "$output:/root/.ssh"
 fi
 
 # set container in running state and launch if necessary
