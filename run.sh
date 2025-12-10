@@ -140,4 +140,4 @@ case "$container_state" in
             ;;
     *) clr_msg err_exit "not managed container state '$container_state'" ;;
 esac
-if ! "$SERVE"; then podman exec -it "$container" bash; fi
+if ! "$SERVE"; then podman exec -it "$container" bash || true; fi
