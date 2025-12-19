@@ -7,7 +7,6 @@ trap 'echo "SCRIPT FAILURE: line $LINENO, exit code: $?, command: $BASH_COMMAND"
 IMAGE_URL="ghcr.io/daniele47/netbird-client:latest"
 SCRIPT_PATH="$(realpath "${BASH_SOURCE[0]}")"
 SCRIPT_DIR="$(dirname "$SCRIPT_PATH")"
-SCRIPT_HASH="$(sha256sum "$SCRIPT_PATH" | cut -d' ' -f1)"
 TWEAKS_DIR="$SCRIPT_DIR/.tweaks"
 SETUP_KEY_FILE="$TWEAKS_DIR/setup_key"
 HOSTNAME_FILE="$TWEAKS_DIR/hostname"
@@ -18,8 +17,8 @@ mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
 touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE"
 
 # various checks
-if [[ ! -s "$SETUP_KEY_FILE" ]]; then clr_msg err_exit 'setup_key file is empty'; fi
-if [[ ! -s "$HOSTNAME_FILE" ]]; then clr_msg err_exit 'hostname file is empty'; fi
+if [[ ! -s "$SETUP_KEY_FILE" ]]; then echo 'setup_key file is empty'; exit 1; fi
+if [[ ! -s "$HOSTNAME_FILE" ]]; then echo 'hostname file is empty'; exit 1; fi
 
 # run container
 podman run --rm -it \
@@ -31,4 +30,4 @@ podman run --rm -it \
     -e NB_HOSTNAME="$(cat "$HOSTNAME_FILE")" \
     --hostname "$(cat "$HOSTNAME_FILE")" \
     -w /root \
-    "$IMAGE_URL"
+    "$IMAGE_URL" || true
