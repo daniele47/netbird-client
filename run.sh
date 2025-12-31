@@ -11,9 +11,10 @@ TWEAKS_DIR="$SCRIPT_DIR/.tweaks"
 SETUP_KEY_FILE="$TWEAKS_DIR/setup_key"
 HOSTNAME_FILE="$TWEAKS_DIR/hostname"
 SSH_CONF_DIR="$TWEAKS_DIR/ssh"
+SHARED_DIR="$TWEAKS_DIR/data"
 
 # create directories and files
-mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR"
+mkdir -p "$TWEAKS_DIR" "$SSH_CONF_DIR" "$SHARED_DIR"
 touch "$SETUP_KEY_FILE" "$HOSTNAME_FILE"
 
 # various checks
@@ -30,6 +31,7 @@ podman run --rm -it \
     -e NB_HOSTNAME="$(cat "$HOSTNAME_FILE")" \
     --hostname "$(cat "$HOSTNAME_FILE")" \
     -v "$SSH_CONF_DIR:/root/.ssh" \
+    -v "$SHARED_DIR:/data" \
     -w /root \
     --security-opt label=type:container_runtime_t \
     "$IMAGE_URL" || true
